@@ -1,3 +1,6 @@
+#define ANALOG_IN_ESP32 34
+#define ANALOG_IN_RP2040 15
+
 bool note = false;
 unsigned long initialms = 0;
 unsigned long currms = 0;
@@ -10,8 +13,8 @@ void setup()
 
 void loop()
 {
-  // read the input on analog pin 34:
-  int sensorValue = analogRead(34);
+  // read the input on analog pin:
+  int sensorValue = analogRead(ANALOG_IN_ESP32);
   // print out the value you read:
   if (sensorValue >= 100)
   {
