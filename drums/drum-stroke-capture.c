@@ -1,71 +1,102 @@
-#include <stdio.h>
+#include <strings.h>
 
-enum DRUMS
+/*
+- all times in ms
+*/
+
+const uint8_t PIEZO_THRESHOLD = 150;
+// const uint16_t PIEZO_THRESHOLD_LG = 256;
+
+const uint8_t XS = 0;
+const uint8_t SM = 1;
+const uint8_t MD = 2;
+const uint8_t LG = 3;
+
+const uint8_t PIN_IN_XS = 32;
+const uint8_t PIN_IN_SM = 33;
+const uint8_t PIN_IN_MD = 25;
+const uint8_t PIN_IN_LG = 26;
+
+const uint8_t PIN_OUT_XS = 27;
+const uint8_t PIN_OUT_SM = 14;
+const uint8_t PIN_OUT_MD = 12;
+const uint8_t PIN_OUT_LG = 13;
+
+const String X = "XS";
+const String S = "SM";
+const String M = "MD";
+const String L = "LG";
+
+// CONFIG DRUMS IN USE
+const uint8_t DRUMSET[4] = {XS, SM, MD, LG};
+
+bool activeNotes[4] = {false, false, false, false};
+unsigned long startTimes[4] = {0, 0, 0, 0};
+uint16_t signals[4] = {0, 0, 0, 0};
+unsigned long currTime = 0;
+
+uint8_t devicein(uint8_t drum)
 {
-  XS = 0,
-  SM = 1,
-  MD = 2,
-  LG = 3,
-  IN_XS = 12,
-  IN_SM = 13,
-  IN_MD = 14,
-  IN_LG = 15,
-  OUT_XS = 36,
-  OUT_SM = 39,
-  OUT_MD = 41,
-  OUT_LG = 40
-};
-
-const char X[] = "XS";
-const char S[] = "SM";
-const char M[] = "MD";
-const char L[] = "LG";
-
-bool notes[4];
-unsigned long startms[4];
-int vals[4];
-unsigned long currms = 0;
-
-int devicein(int drum)
-{
-  return drum == 0 ? IN_XS : drum == 1 ? IN_SM
-                         : drum == 2   ? IN_MD
-                                       : IN_LG;
+  uint8_t pin;
+  pin = drum == 0 ? PIN_IN_XS : drum == 1 ? PIN_IN_SM
+                            : drum == 2   ? PIN_IN_MD
+                                          : PIN_IN_LG;
+  return pin;
 }
 
-int deviceout(int drum)
+uint8_t deviceout(uint8_t drum)
 {
-  return drum == 0 ? OUT_XS : drum == 1 ? OUT_SM
-                          : drum == 2   ? OUT_MD
-                                        : OUT_LG;
+  uint8_t pin;
+  pin = drum == 0 ? PIN_OUT_XS : drum == 1 ? PIN_OUT_SM
+                             : drum == 2   ? PIN_OUT_MD
+                                           : PIN_OUT_LG;
+  return pin;
 }
 
-String devicename(int drum)
+String devicename(uint8_t drum)
 {
   return drum == 0 ? X : drum == 1 ? S
                      : drum == 2   ? M
                                    : L;
 }
 
-void ReadDrum(int drum)
+void ReadDrum(uint8_t drum)
 {
-  if (notes[drum] == false)
+  if (activeNotes[drum] == false)
   {
-    vals[drum] = max(vals[drum], analogRead(devicein(drum)));
-    notes[drum] = true;
-    startms[drum] = millis();
-  }
-  else
-  {
-    currms = millis();
-    if (currms - startms[drum] > 200)
+    uint16_t val = analogRead(devicein(drum));
+
+    if (val >= PIEZO_THRESHOLD)
     {
-      // note captured
-      notes[drum] = false;
-      startms[drum] = 0;
-      Serial.print(vals[drum]);
-      Serial.println(" " + devicename(drum));
-      vals[drum] = 0;
+      // signals[drum] = max(signals[drum], val);
+      signals[drum] = val;
+      activeNotes[drum] = true;
+      startTimes[drum] = millis();
+    }
+  }
+  else if (activeNotes[drum] == true)
+  {
+    currTime = millis();
+    if (currTime - startTimes[drum] > 200)
+    {
+      /*
+        note capture expired:
+          1.  print captured note
+          2.  reset note
+      */
+      if (signals[drum] >= PIEZO_THRESHOLD)
+      {
+        Serial.print(signals[drum]);
+        Serial.println(" " + devicename(drum));
+      }
+
+      activeNotes[drum] = false;
+      startTimes[drum] = 0;
+      signals[drum] = 0;
+    }
+    else
+    {
+      // ignore residual signals during note capture interval, do nothing
     }
   }
 }
@@ -73,22 +104,21 @@ void ReadDrum(int drum)
 void setup()
 {
   Serial.begin(9600);
-  pinMode(OUT_XS, OUTPUT);
-  pinMode(OUT_SM, OUTPUT);
-  pinMode(OUT_MD, OUTPUT);
-  pinMode(OUT_LG, OUTPUT);
 
-  digitalWrite(OUT_XS, HIGH);
-  digitalWrite(OUT_SM, HIGH);
-  digitalWrite(OUT_MD, HIGH);
-  digitalWrite(OUT_LG, HIGH);
+  for (uint8_t i = 0; i < sizeof(DRUMSET) / sizeof(DRUMSET[0]); i++)
+  {
+    pinMode(deviceout(DRUMSET[i]), OUTPUT);
+    pinMode(devicein(DRUMSET[i]), INPUT);
+    digitalWrite(deviceout(DRUMSET[i]), HIGH);
+  }
 }
 
 void loop()
 {
-  ReadDrum(XS);
-  ReadDrum(SM);
-  ReadDrum(MD);
-  ReadDrum(LG);
-  delay(10); // delay in between reads for stability
+  for (uint8_t i = 0; i < sizeof(DRUMSET) / sizeof(DRUMSET[0]); i++)
+  {
+    ReadDrum(DRUMSET[i]);
+  }
+  Serial.println();
+  delay(100); // delay in between reads for stability
 }
