@@ -13,7 +13,7 @@ const uint8_t MD = 2;
 const uint8_t LG = 3;
 
 const uint8_t PIN_IN_XS = 32;
-const uint8_t PIN_IN_SM = 33;
+const uint8_t PIN_IN_SM = 26;
 const uint8_t PIN_IN_MD = 25;
 const uint8_t PIN_IN_LG = 33;
 
