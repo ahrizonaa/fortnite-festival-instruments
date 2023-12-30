@@ -15,7 +15,7 @@ const uint8_t LG = 3;
 const uint8_t PIN_IN_XS = 32;
 const uint8_t PIN_IN_SM = 33;
 const uint8_t PIN_IN_MD = 25;
-const uint8_t PIN_IN_LG = 26;
+const uint8_t PIN_IN_LG = 33;
 
 const uint8_t PIN_OUT_XS = 27;
 const uint8_t PIN_OUT_SM = 14;
@@ -28,7 +28,7 @@ const String M = "MD";
 const String L = "LG";
 
 // CONFIG DRUMS IN USE
-const uint8_t DRUMSET[4] = {XS, SM, MD, LG};
+const uint8_t DRUMSET[1] = {LG};
 
 bool activeNotes[4] = {false, false, false, false};
 unsigned long startTimes[4] = {0, 0, 0, 0};
@@ -38,26 +38,26 @@ unsigned long currTime = 0;
 uint8_t devicein(uint8_t drum)
 {
   uint8_t pin;
-  pin = drum == 0 ? PIN_IN_XS : drum == 1 ? PIN_IN_SM
-                            : drum == 2   ? PIN_IN_MD
-                                          : PIN_IN_LG;
+  pin = drum == XS ? PIN_IN_XS : drum == SM ? PIN_IN_SM
+                             : drum == MD   ? PIN_IN_MD
+                                            : PIN_IN_LG;
   return pin;
 }
 
 uint8_t deviceout(uint8_t drum)
 {
   uint8_t pin;
-  pin = drum == 0 ? PIN_OUT_XS : drum == 1 ? PIN_OUT_SM
-                             : drum == 2   ? PIN_OUT_MD
-                                           : PIN_OUT_LG;
+  pin = drum == XS ? PIN_OUT_XS : drum == SM ? PIN_OUT_SM
+                              : drum == MD   ? PIN_OUT_MD
+                                             : PIN_OUT_LG;
   return pin;
 }
 
 String devicename(uint8_t drum)
 {
-  return drum == 0 ? X : drum == 1 ? S
-                     : drum == 2   ? M
-                                   : L;
+  return drum == XS ? X : drum == SM ? S
+                      : drum == MD   ? M
+                                     : L;
 }
 
 void ReadDrum(uint8_t drum)
@@ -107,9 +107,9 @@ void setup()
 
   for (uint8_t i = 0; i < sizeof(DRUMSET) / sizeof(DRUMSET[0]); i++)
   {
-    pinMode(deviceout(DRUMSET[i]), OUTPUT);
+    // pinMode(deviceout(DRUMSET[i]), OUTPUT);
     pinMode(devicein(DRUMSET[i]), INPUT);
-    digitalWrite(deviceout(DRUMSET[i]), HIGH);
+    // digitalWrite(deviceout(DRUMSET[i]), HIGH);
   }
 }
 
@@ -120,5 +120,5 @@ void loop()
     ReadDrum(DRUMSET[i]);
   }
   Serial.println();
-  delay(100); // delay in between reads for stability
+  delay(10); // delay in between reads for stability
 }
