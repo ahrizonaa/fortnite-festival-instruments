@@ -1,86 +1,94 @@
-#define ANALOG_IN_ESP32 34
-#define PIEZO_POWER_ESP32 32
+#include <stdio.h>
 
-#define ANALOG_IN_RP2040 15
-#define PIEZO_POWER_RP2040 16
-
-#define ESP32 1
-#define RP2040 2
-
-#define POWER 1
-#define PIN 2
-
-bool note = false;
-unsigned long initialms = 0;
-unsigned long currms = 0;
-int currMax = 0;
-int board = RP2040;
-
-int curr_power_pin()
+enum DRUMS
 {
-  if (board == ESP32)
-  {
-    return ANALOG_IN_ESP32;
-  }
-  else
-  {
-    return ANALOG_IN_RP2040;
-  }
+  XS = 0,
+  SM = 1,
+  MD = 2,
+  LG = 3,
+  IN_XS = 12,
+  IN_SM = 13,
+  IN_MD = 14,
+  IN_LG = 15,
+  OUT_XS = 36,
+  OUT_SM = 39,
+  OUT_MD = 41,
+  OUT_LG = 40
+};
+
+const char X[] = "XS";
+const char S[] = "SM";
+const char M[] = "MD";
+const char L[] = "LG";
+
+bool notes[4];
+unsigned long startms[4];
+int vals[4];
+unsigned long currms = 0;
+
+int devicein(int drum)
+{
+  return drum == 0 ? IN_XS : drum == 1 ? IN_SM
+                         : drum == 2   ? IN_MD
+                                       : IN_LG;
 }
 
-int curr_input_pin()
+int deviceout(int drum)
 {
-  if (board == ESP32)
+  return drum == 0 ? OUT_XS : drum == 1 ? OUT_SM
+                          : drum == 2   ? OUT_MD
+                                        : OUT_LG;
+}
+
+String devicename(int drum)
+{
+  return drum == 0 ? X : drum == 1 ? S
+                     : drum == 2   ? M
+                                   : L;
+}
+
+void ReadDrum(int drum)
+{
+  if (notes[drum] == false)
   {
-    return PIEZO_POWER_ESP32;
+    vals[drum] = max(vals[drum], analogRead(devicein(drum)));
+    notes[drum] = true;
+    startms[drum] = millis();
   }
   else
   {
-    return PIEZO_POWER_RP2040;
+    currms = millis();
+    if (currms - startms[drum] > 200)
+    {
+      // note captured
+      notes[drum] = false;
+      startms[drum] = 0;
+      Serial.print(vals[drum]);
+      Serial.println(" " + devicename(drum));
+      vals[drum] = 0;
+    }
   }
 }
 
 void setup()
 {
   Serial.begin(9600);
-  pinMode(curr_power_pin(), OUTPUT);
-  digitalWrite(curr_power_pin(), HIGH);
+  pinMode(OUT_XS, OUTPUT);
+  pinMode(OUT_SM, OUTPUT);
+  pinMode(OUT_MD, OUTPUT);
+  pinMode(OUT_LG, OUTPUT);
+
+  digitalWrite(OUT_XS, HIGH);
+  digitalWrite(OUT_SM, HIGH);
+  digitalWrite(OUT_MD, HIGH);
+  digitalWrite(OUT_LG, HIGH);
 }
 
 void loop()
 {
-  // read the input on analog pin:
-  int sensorValue = analogRead(curr_input_pin());
-  // print out the value you read:
-  if (sensorValue >= 100)
-  {
-    if (note == false)
-    {
-      note = true;
-      currMax = sensorValue;
-      initialms = millis();
-    }
-    else
-    {
-      currms = millis();
-      if (currms - initialms < 200)
-      {
-        if (sensorValue > currMax)
-        {
-          currMax = sensorValue;
-        }
-      }
-      else
-      {
-        // print note captured
-        Serial.println(currMax);
-        // reset all
-        note = false;
-        currMax = 0;
-        initialms = 0;
-        currms = 0;
-      }
-    }
-  }
+  ReadDrum(XS);
+  ReadDrum(SM);
+  ReadDrum(MD);
+  ReadDrum(LG);
   delay(10); // delay in between reads for stability
 }
