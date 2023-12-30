@@ -12,15 +12,15 @@ const uint8_t SM = 1;
 const uint8_t MD = 2;
 const uint8_t LG = 3;
 
-const uint8_t PIN_IN_XS = 32;
-const uint8_t PIN_IN_SM = 26;
-const uint8_t PIN_IN_MD = 25;
-const uint8_t PIN_IN_LG = 33;
+const uint8_t PIN_IN_XS = 13;
+const uint8_t PIN_IN_SM = 12;
+const uint8_t PIN_IN_MD = 14;
+const uint8_t PIN_IN_LG = 27;
 
-const uint8_t PIN_OUT_XS = 27;
-const uint8_t PIN_OUT_SM = 14;
-const uint8_t PIN_OUT_MD = 12;
-const uint8_t PIN_OUT_LG = 13;
+const uint8_t PIN_OUT_XS = 26;
+const uint8_t PIN_OUT_SM = 25;
+const uint8_t PIN_OUT_MD = 33;
+const uint8_t PIN_OUT_LG = 32;
 
 const String X = "XS";
 const String S = "SM";
@@ -28,7 +28,7 @@ const String M = "MD";
 const String L = "LG";
 
 // CONFIG DRUMS IN USE
-const uint8_t DRUMSET[1] = {LG};
+const uint8_t DRUMSET[4] = {XS, SM, MD, LG};
 
 bool activeNotes[4] = {false, false, false, false};
 unsigned long startTimes[4] = {0, 0, 0, 0};
@@ -68,7 +68,6 @@ void ReadDrum(uint8_t drum)
 
     if (val >= PIEZO_THRESHOLD)
     {
-      // signals[drum] = max(signals[drum], val);
       signals[drum] = val;
       activeNotes[drum] = true;
       startTimes[drum] = millis();
@@ -107,9 +106,9 @@ void setup()
 
   for (uint8_t i = 0; i < sizeof(DRUMSET) / sizeof(DRUMSET[0]); i++)
   {
-    // pinMode(deviceout(DRUMSET[i]), OUTPUT);
     pinMode(devicein(DRUMSET[i]), INPUT);
-    // digitalWrite(deviceout(DRUMSET[i]), HIGH);
+    pinMode(deviceout(DRUMSET[i]), OUTPUT);
+    digitalWrite(deviceout(DRUMSET[i]), HIGH);
   }
 }
 
@@ -119,6 +118,6 @@ void loop()
   {
     ReadDrum(DRUMSET[i]);
   }
-  Serial.println();
+  // Serial.println();
   delay(10); // delay in between reads for stability
 }
