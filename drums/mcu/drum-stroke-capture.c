@@ -1,11 +1,17 @@
 #include <strings.h>
+#include <Arduino.h>
+#include <BleGamepad.h>
 
 /*
 - all times in ms
 */
 
+BleGamepad bleGamepad("Smart Drums", "Mark Tech", 100);
+
 const uint8_t PIEZO_THRESHOLD = 150;
 // const uint16_t PIEZO_THRESHOLD_LG = 256;
+
+const uint8_t NOTE_INTERVAL = 250;
 
 const uint8_t XS = 0;
 const uint8_t SM = 1;
@@ -71,12 +77,17 @@ void ReadDrum(uint8_t drum)
       signals[drum] = val;
       activeNotes[drum] = true;
       startTimes[drum] = millis();
+      if (bleGamepad.isConnected())
+      {
+        bleGamepad.press(BUTTON_1);
+        bleGamepad.release(BUTTON_1);
+      }
     }
   }
   else if (activeNotes[drum] == true)
   {
     currTime = millis();
-    if (currTime - startTimes[drum] > 200)
+    if (currTime - startTimes[drum] > NOTE_INTERVAL)
     {
       /*
         note capture expired:
@@ -102,8 +113,8 @@ void ReadDrum(uint8_t drum)
 
 void setup()
 {
-  Serial.begin(9600);
-
+  Serial.begin(115200);
+  bleGamepad.begin();
   for (uint8_t i = 0; i < sizeof(DRUMSET) / sizeof(DRUMSET[0]); i++)
   {
     pinMode(devicein(DRUMSET[i]), INPUT);
